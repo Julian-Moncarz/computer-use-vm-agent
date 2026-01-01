@@ -1,0 +1,2 @@
+anthropic>=0.18.0
+paramiko>=3.0.0
