@@ -57,8 +57,18 @@ class VM:
 
     def screenshot(self) -> bytes:
         """Take screenshot with cursor visible, return PNG bytes."""
-        # scrot -p includes pointer, output to stdout via base64
-        b64 = self._run("scrot -p /tmp/s.png && base64 /tmp/s.png", timeout=15)
+        # Use unique filename, force overwrite, sync display first
+        import time
+        ts = int(time.time() * 1000)
+        cmd = f"""
+            rm -f /tmp/shot_{ts}.png
+            DISPLAY=:0 xdotool sync
+            sleep 0.1
+            DISPLAY=:0 scrot -o /tmp/shot_{ts}.png
+            base64 /tmp/shot_{ts}.png
+            rm -f /tmp/shot_{ts}.png
+        """
+        b64 = self._run(cmd, timeout=15)
         return base64.b64decode(b64.strip())
 
     def move_mouse(self, x: int, y: int):

@@ -15,23 +15,15 @@ This system allows Claude to control a virtual machine through mouse movements, 
 
 ## Quick Start
 
-### 1. Install dependencies
+See **[SETUP.md](SETUP.md)** for detailed first-time setup instructions.
+
+If already set up:
 
 ```bash
-pip install -r requirements.txt
+python3 main.py
 ```
 
-### 2. Set your API key
-
-```bash
-export ANTHROPIC_API_KEY=your_key_here
-```
-
-### 3. Run the agent
-
-```bash
-python main.py --vm "Debian-Claude" --ssh-user user
-```
+Enter a task like "Open Firefox and search for cats"
 
 ## VM Setup (One-time)
 

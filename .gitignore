@@ -22,3 +22,5 @@ Thumbs.db
 # Project specific
 *.iso
 screenshots/
+.env
+screenshots/

@@ -5,8 +5,17 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 from anthropic import Anthropic
 from vm import VM, VMError
+
+# Load .env file if it exists
+env_file = Path(__file__).parent / ".env"
+if env_file.exists():
+    for line in env_file.read_text().splitlines():
+        if line.strip() and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
 
 # Tool definitions for Claude
 TOOLS = [
@@ -78,6 +87,7 @@ TOOLS = [
 ]
 
 MAX_ITERATIONS = 100
+SCREENSHOT_DIR = Path(__file__).parent / "screenshots"
 
 
 def execute_tool(vm: VM, name: str, args: dict) -> dict:
@@ -85,6 +95,12 @@ def execute_tool(vm: VM, name: str, args: dict) -> dict:
     try:
         if name == "screenshot":
             png = vm.screenshot()
+            # Save locally for user to view
+            SCREENSHOT_DIR.mkdir(exist_ok=True)
+            timestamp = time.strftime("%H%M%S")
+            filepath = SCREENSHOT_DIR / f"{timestamp}.png"
+            filepath.write_bytes(png)
+            print(f"    [{filepath}]")
             return {"success": True, "image": base64.b64encode(png).decode()}
         elif name == "move_mouse":
             vm.move_mouse(args["x"], args["y"])
@@ -156,26 +172,25 @@ The screenshot above shows the current desktop. Begin working on the task."""
     }]
 
     for iteration in range(MAX_ITERATIONS):
-        print(f"\n[Iteration {iteration + 1}/{MAX_ITERATIONS}]")
-
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=4096,
             tools=TOOLS,
             messages=messages
         )
 
+        # Print any text content (Claude's thinking)
+        for block in response.content:
+            if hasattr(block, "text") and block.text:
+                print(f"\n{block.text}")
+
         # Check if Claude is done
         if response.stop_reason == "end_turn":
-            for block in response.content:
-                if hasattr(block, "text"):
-                    print(f"\n=== TASK COMPLETE ===\n{block.text}")
             return
 
         # Process tool calls
         tool_uses = [b for b in response.content if b.type == "tool_use"]
         if not tool_uses:
-            print("No tool calls and not end_turn - stopping.")
             return
 
         # Add assistant message
@@ -184,7 +199,14 @@ The screenshot above shows the current desktop. Begin working on the task."""
         # Execute each tool
         tool_results = []
         for tool in tool_uses:
-            print(f"  -> {tool.name}({json.dumps(tool.input)})")
+            # Format tool call nicely
+            if tool.name == "screenshot":
+                print(f"  > screenshot")
+            elif tool.input:
+                args = ", ".join(f"{k}={v!r}" for k, v in tool.input.items())
+                print(f"  > {tool.name}({args})")
+            else:
+                print(f"  > {tool.name}()")
             result = execute_tool(vm, tool.name, tool.input)
 
             # Format result for Claude
@@ -210,7 +232,7 @@ The screenshot above shows the current desktop. Begin working on the task."""
 
         messages.append({"role": "user", "content": tool_results})
 
-    print(f"\n=== MAX ITERATIONS ({MAX_ITERATIONS}) REACHED ===")
+    print(f"\nStopped after {MAX_ITERATIONS} iterations.")
 
 
 def main():
@@ -221,8 +243,10 @@ def main():
                         help="VM SSH host/IP (auto-detected if not set)")
     parser.add_argument("--ssh-user", default=os.environ.get("VM_SSH_USER", "user"),
                         help="VM SSH username")
-    parser.add_argument("--ssh-key", default=os.environ.get("VM_SSH_KEY", "~/.ssh/id_rsa"),
+    parser.add_argument("--ssh-key", default=os.environ.get("VM_SSH_KEY", "~/.ssh/vm_agent_key"),
                         help="SSH private key path")
+    parser.add_argument("--task", help="Task to execute (non-interactive mode)")
+    parser.add_argument("--keep-screenshots", action="store_true", help="Keep screenshots after exit")
     args = parser.parse_args()
 
     # Get VM IP if not provided
@@ -239,31 +263,36 @@ def main():
 
     # Connect to VM
     vm = VM(args.vm, ssh_host, args.ssh_user, args.ssh_key)
-    print(f"Connecting to {args.ssh_user}@{ssh_host}...")
     try:
         vm.connect()
-        print("  -> Connected!")
+        print(f"Connected to {args.ssh_user}@{ssh_host}")
     except Exception as e:
-        print(f"Error connecting: {e}")
+        print(f"Error: {e}")
         sys.exit(1)
 
-    print("\n" + "="*50)
-    print("AUTONOMOUS VM AGENT")
-    print("Claude controls a Debian VM to complete tasks.")
-    print("Type a task and press Enter. Ctrl+C to quit.")
-    print("="*50)
-
     try:
-        while True:
-            task = input("\nEnter task: ").strip()
-            if not task:
-                continue
-            print()
-            run_agent(vm, task)
+        if args.task:
+            # Non-interactive mode: run single task and exit
+            print(f"Task: {args.task}\n")
+            run_agent(vm, args.task)
+        else:
+            # Interactive mode
+            print("Enter a task (Ctrl+C to quit)\n")
+            while True:
+                task = input("> ").strip()
+                if not task:
+                    continue
+                print()
+                run_agent(vm, task)
     except KeyboardInterrupt:
         print("\nGoodbye!")
     finally:
         vm.disconnect()
+        # Clean up screenshots unless --keep-screenshots
+        if not args.keep_screenshots and SCREENSHOT_DIR.exists():
+            import shutil
+            shutil.rmtree(SCREENSHOT_DIR)
+            print("Screenshots cleaned up.")
 
 
 if __name__ == "__main__":
