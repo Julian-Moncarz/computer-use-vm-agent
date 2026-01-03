@@ -19,7 +19,6 @@ To use once set up: just run python main.py
 
 ## How it works
 
-````markdown
 ```mermaid
 flowchart TB
     subgraph MacHost["Mac Host"]
@@ -54,7 +53,6 @@ flowchart TB
     B -.->|"Needs help"| H
     H -.-> A
 ```
-````
 
 ## License
 
