@@ -20,38 +20,19 @@ To use once set up: just run python main.py
 ## How it works
 
 ```mermaid
-flowchart TB
-    subgraph MacHost["Mac Host"]
-        main["main.py: Claude API agent loop + CLI"]
-        vm["vm.py: SSH connection + xdotool commands"]
-    end
+flowchart TD
+    A[Screenshot of VM]:::blue --> B[Claude analyzes & decides which tool to use. For example: move mouse, right click, type etc OR ask for help]:::purple
+    B --> C[Execute tool via xdotool]:::green
+    C --> A
+    B -.-> E[Ask user for help]:::orange
+    E -.-> A
 
-    subgraph DebianVM["Debian VM (UTM)"]
-        desktop["XFCE Desktop + Firefox + xdotool + scrot"]
-    end
 
-    subgraph AgentLoop["Agent Loop"]
-        A["1. Claude receives task + screenshot"]
-        B["2. Claude decides action\n(move mouse, click, type, etc.)"]
-        C["3. Action executed via SSH + xdotool"]
-        D["4. New screenshot taken"]
-        E["5. Screenshot sent back to Claude"]
-        F{"Task complete?"}
-        G["Done"]
-        H["Pause & ask user\n(CAPTCHAs, credentials)"]
-    end
+    classDef blue fill:#1e90ff,stroke:#1e90ff,color:#fff
+    classDef purple fill:#9370db,stroke:#9370db,color:#fff
+    classDef green fill:#3cb371,stroke:#3cb371,color:#fff
+    classDef orange fill:#ff8c00,stroke:#ff8c00,color:#fff
 
-    MacHost -->|"SSH to VM"| DebianVM
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F -->|No| A
-    F -->|Yes| G
-    B -.->|"Needs help"| H
-    H -.-> A
 ```
 
 ## License
