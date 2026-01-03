@@ -19,6 +19,8 @@ To use once set up: just run python main.py
 
 ## How it works
 
+````markdown
+```mermaid
 flowchart TB
     subgraph MacHost["Mac Host"]
         main["main.py: Claude API agent loop + CLI"]
@@ -51,6 +53,8 @@ flowchart TB
     F -->|Yes| G
     B -.->|"Needs help"| H
     H -.-> A
+```
+````
 
 ## License
 
