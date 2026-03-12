@@ -269,13 +269,7 @@ The screenshot above shows the current desktop. Begin working on the task."""
         for tool in tool_uses:
             # Format tool call nicely
             action_str = format_action(tool.name, tool.input)
-            if tool.name == "screenshot":
-                print(f"  > screenshot")
-            elif tool.input:
-                args = ", ".join(f"{k}={v!r}" for k, v in tool.input.items())
-                print(f"  > {tool.name}({args})")
-            else:
-                print(f"  > {tool.name}()")
+            print(f"  > {action_str}")
 
             # Record non-screenshot actions (screenshots add frames themselves)
             if recorder and tool.name != "screenshot":

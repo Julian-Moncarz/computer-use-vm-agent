@@ -15,7 +15,6 @@ pip install -r requirements.txt
 # Run (requires VM running + .env configured)
 python3 main.py                        # Interactive mode
 python3 main.py --task "Open Firefox"  # Single task, then exit
-python3 main.py --keep-screenshots     # Don't delete screenshots/ on exit
 ```
 
 ## Architecture
@@ -34,9 +33,9 @@ Debian VM (UTM or Xvfb in cloud)
 
 ## Key Implementation Details
 
-**Screenshot reliability**: Uses unique timestamp filenames + `xdotool sync` + small delay before capture. Static filenames cause caching bugs (see POST_MORTEM.md).
+**Screenshot reliability**: Uses unique timestamp filenames + `xdotool sync` + small delay before capture. Static filenames cause caching bugs.
 
-**Model**: Currently uses `claude-sonnet-4-5-20250929` in main.py.
+**Model**: Currently uses `claude-haiku-4-5-20251001` in main.py.
 
 **Environment variables** (loaded from `.env`):
 - `ANTHROPIC_API_KEY` - required

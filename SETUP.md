@@ -113,7 +113,6 @@ Enter a task like "Open Firefox and go to google.com"
 ```bash
 python3 main.py                        # Interactive mode
 python3 main.py --task "Open Firefox"  # Single task mode
-python3 main.py --keep-screenshots     # Keep screenshots after exit
 ```
 
 ## Troubleshooting
